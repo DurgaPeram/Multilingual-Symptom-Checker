@@ -62,7 +62,7 @@ symptoms_df, descriptions_df, multi_word_symptoms = load_all()
 left, right = st.columns([2, 2])
 
 with left:
-    st.markdown("### Health Tips")
+    st.markdown("### Prevention is better than cure")
     import base64
     image_files = [
         "image 1.jpg",
