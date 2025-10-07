@@ -2,27 +2,48 @@ import pandas as pd
 import spacy
 from spellchecker import SpellChecker
 from pathlib import Path
+from spacy.cli import download
 
+# -----------------------------
+# Path Setup
+# -----------------------------
 BASE_DIR = Path(__file__).parent
 SYMPTOMS_CSV = BASE_DIR / "diseases_and_symptoms.csv"
 DESCRIPTIONS_CSV = BASE_DIR / "disease_descriptions.csv"
 
+# Fallback if files are in /data/
 if not SYMPTOMS_CSV.exists():
     SYMPTOMS_CSV = BASE_DIR / "data" / "diseases_and_symptoms.csv"
 if not DESCRIPTIONS_CSV.exists():
     DESCRIPTIONS_CSV = BASE_DIR / "data" / "disease_descriptions.csv"
 
-# Load spaCy + SpellChecker
-nlp = spacy.load("en_core_web_sm")
+# -----------------------------
+# Load spaCy Model + SpellChecker (safe for Streamlit Cloud)
+# -----------------------------
+try:
+    nlp = spacy.load("en_core_web_sm")
+except OSError:
+    download("en_core_web_sm")
+    nlp = spacy.load("en_core_web_sm")
+
 spell = SpellChecker()
 
+# -----------------------------
+# CSV Loaders
+# -----------------------------
 def load_symptoms_df():
+    """Load the disease-symptom dataset."""
     return pd.read_csv(SYMPTOMS_CSV, on_bad_lines="skip")
 
 def load_descriptions_df():
+    """Load the disease descriptions dataset."""
     return pd.read_csv(DESCRIPTIONS_CSV, on_bad_lines="skip")
 
+# -----------------------------
+# Text Processing Functions
+# -----------------------------
 def extract_multi_word_symptoms(symptoms_df):
+    """Extract multi-word symptoms from dataset for matching."""
     multi_word_symptoms = set()
     for _, row in symptoms_df.iterrows():
         for i in range(1, 5):
@@ -32,6 +53,7 @@ def extract_multi_word_symptoms(symptoms_df):
     return multi_word_symptoms
 
 def process_user_input(user_input, multi_word_symptoms):
+    """Clean and match user-entered symptoms with dataset."""
     words = user_input.split()
     corrected_words = [spell.correction(w) or w for w in words]
     corrected = " ".join(corrected_words).lower()
@@ -45,6 +67,7 @@ def process_user_input(user_input, multi_word_symptoms):
             if combo in multi_word_symptoms:
                 combos.append(combo)
         return combos
+
     matched.extend(check_combo(words, 2))
     matched.extend(check_combo(words, 3))
 
@@ -52,15 +75,24 @@ def process_user_input(user_input, multi_word_symptoms):
     return list(set(words))
 
 def find_disease(symptoms, df):
+    """Match symptoms to the closest disease in the dataset."""
     for _, row in df.iterrows():
-        disease_symptoms = {str(row[f"Symptom{i+1}"]).lower() for i in range(4) if pd.notna(row[f"Symptom{i+1}"])}
+        disease_symptoms = {
+            str(row[f"Symptom{i+1}"]).lower()
+            for i in range(4)
+            if pd.notna(row[f"Symptom{i+1}"])
+        }
         matches = len(set(symptoms).intersection(disease_symptoms))
         if matches >= 3:
             return row["Disease"]
     return None
 
 def get_description(disease, lang, df):
-    row = df[(df["Disease"].str.lower() == str(disease).lower()) & (df["Language Code"] == lang)]
+    """Retrieve description in selected language."""
+    row = df[
+        (df["Disease"].str.lower() == str(disease).lower())
+        & (df["Language Code"] == lang)
+    ]
     if not row.empty:
         return row.iloc[0]["Description"]
     return None
