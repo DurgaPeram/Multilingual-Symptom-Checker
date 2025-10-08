@@ -1,7 +1,9 @@
 # Multilingual Symptom Checker
 
-A Streamlit-based web app that provides preliminary health guidance by matching user-entered symptoms to likely diseases and showing multilingual descriptions. Designed for quick local testing and demonstration.
+A Streamlit-based web app that provides preliminary health guidance by matching user-entered symptoms to likely diseases and showing multilingual descriptions. Designed for quick local testing and demonstration.It is done using Streamlit.
 
+# Run this app at 
+https://multilingual-symptom-checker-dit5pzg82gmtfked48kzys.streamlit.app/
 ## Features
 
 - Enter up to 4 symptoms and get a probable diagnosis.
